@@ -117,8 +117,8 @@ class MockAIService {
     required List<MessageModel> conversationHistory,
     required int currentFavorability,
   }) async {
-    // 模拟网络延迟
-    await Future.delayed(Duration(milliseconds: 500 + _random.nextInt(1500)));
+    // 短暂延时，让回复更自然
+    await Future.delayed(Duration(milliseconds: 50 + _random.nextInt(150)));
 
     // 获取角色模板
     final templates = _conversationTemplates[characterId] ?? [];

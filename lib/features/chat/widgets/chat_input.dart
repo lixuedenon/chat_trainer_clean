@@ -1,4 +1,4 @@
-// lib/features/chat/widgets/chat_input.dart (修复焦点问题)
+// lib/features/chat/widgets/chat_input.dart
 
 import 'package:flutter/material.dart';
 
@@ -29,7 +29,6 @@ class _ChatInputState extends State<ChatInput> {
   void initState() {
     super.initState();
     _textController.addListener(_onTextChanged);
-    // 延迟聚焦，确保页面完全加载
     Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted) {
         _focusNode.requestFocus();
@@ -66,14 +65,12 @@ class _ChatInputState extends State<ChatInput> {
       await widget.onSendMessage(message);
       _textController.clear();
 
-      // 关键修复：强制重新聚焦，增加延迟确保消息发送完成
       Future.delayed(const Duration(milliseconds: 50), () {
         if (mounted && widget.enabled && _focusNode.canRequestFocus) {
           _focusNode.requestFocus();
         }
       });
     } catch (e) {
-      // 错误处理在父组件中进行
       rethrow;
     } finally {
       if (mounted) {
@@ -98,7 +95,6 @@ class _ChatInputState extends State<ChatInput> {
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              // 可以添加充值页面导航
             },
             child: const Text('去充值'),
           ),
@@ -119,7 +115,7 @@ class _ChatInputState extends State<ChatInput> {
                    widget.remainingCredits > 0;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -140,34 +136,43 @@ class _ChatInputState extends State<ChatInput> {
               ),
             ),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
-                child: TextField(
-                  controller: _textController,
-                  focusNode: _focusNode,
-                  enabled: widget.enabled && !_isSending,
-                  maxLength: widget.maxLength,
-                  maxLines: null,
-                  textInputAction: TextInputAction.send,
-                  onSubmitted: canSend ? (_) => _sendMessage() : null,
-                  decoration: InputDecoration(
-                    hintText: '输入消息...',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide.none,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxHeight: 100,
+                  ),
+                  child: TextField(
+                    controller: _textController,
+                    focusNode: _focusNode,
+                    enabled: widget.enabled && !_isSending,
+                    maxLength: widget.maxLength,
+                    maxLines: null,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: canSend ? (_) => _sendMessage() : null,
+                    decoration: InputDecoration(
+                      hintText: '输入消息...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[100],
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      counterText: '',
+                      isDense: true,
                     ),
-                    filled: true,
-                    fillColor: Colors.grey[100],
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    counterText: '',
                   ),
                 ),
               ),
               const SizedBox(width: 8),
               Container(
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   color: canSend ? Theme.of(context).primaryColor : Colors.grey[300],
                   shape: BoxShape.circle,
@@ -183,7 +188,7 @@ class _ChatInputState extends State<ChatInput> {
                             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
-                      : const Icon(Icons.send, color: Colors.white),
+                      : const Icon(Icons.send, color: Colors.white, size: 20),
                 ),
               ),
             ],

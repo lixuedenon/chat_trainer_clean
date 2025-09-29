@@ -1,4 +1,4 @@
-// lib/features/auth/pages/login_page.dart (修改提示信息)
+// lib/features/auth/pages/login_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -28,145 +28,141 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: const Text('登录'),
         centerTitle: true,
       ),
-      body: Consumer<AuthController>(
-        builder: (context, authController, child) {
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.chat_bubble_outline,
-                    size: 80,
-                    color: Theme.of(context).primaryColor,
-                  ),
-                  const SizedBox(height: 32),
-                  Text(
-                    '欢迎回来',
-                    style: Theme.of(context).textTheme.headlineLarge,
-                  ),
-                  const SizedBox(height: 32),
-
-                  TextFormField(
-                    controller: _usernameController,
-                    decoration: const InputDecoration(
-                      labelText: '用户名',
-                      prefixIcon: Icon(Icons.person),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Consumer<AuthController>(
+            builder: (context, authController, child) {
+              return Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 40),
+                    Icon(
+                      Icons.chat_bubble_outline,
+                      size: 80,
+                      color: Theme.of(context).primaryColor,
                     ),
-                    validator: (value) {
-                      if (value?.isEmpty ?? true) {
-                        return '请输入用户名';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 32),
+                    Text(
+                      '欢迎回来',
+                      style: Theme.of(context).textTheme.headlineLarge,
+                    ),
+                    const SizedBox(height: 32),
 
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    decoration: InputDecoration(
-                      labelText: '密码',
-                      prefixIcon: const Icon(Icons.lock),
-                      suffixIcon: IconButton(
-                        icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
+                    TextFormField(
+                      controller: _usernameController,
+                      decoration: const InputDecoration(
+                        labelText: '用户名',
+                        prefixIcon: Icon(Icons.person),
                       ),
+                      validator: (value) {
+                        if (value?.isEmpty ?? true) {
+                          return '请输入用户名';
+                        }
+                        return null;
+                      },
                     ),
-                    validator: (value) {
-                      if (value?.isEmpty ?? true) {
-                        return '请输入密码';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 16),
 
-                  if (authController.errorMessage.isNotEmpty)
+                    TextFormField(
+                      controller: _passwordController,
+                      obscureText: _obscurePassword,
+                      decoration: InputDecoration(
+                        labelText: '密码',
+                        prefixIcon: const Icon(Icons.lock),
+                        suffixIcon: IconButton(
+                          icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value?.isEmpty ?? true) {
+                          return '请输入密码';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 24),
+
+                    if (authController.errorMessage.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.red[50],
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.red[200]!),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.error_outline, color: Colors.red[700]),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                authController.errorMessage,
+                                style: TextStyle(color: Colors.red[700]),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    CustomButton(
+                      text: '登录',
+                      isLoading: authController.isLoading,
+                      width: double.infinity,
+                      onPressed: () => _handleLogin(authController),
+                    ),
+                    const SizedBox(height: 16),
+
+                    TextButton(
+                      onPressed: () => _showRegisterDialog(context),
+                      child: const Text('还没有账号？点击注册'),
+                    ),
+
+                    const SizedBox(height: 16),
                     Container(
                       padding: const EdgeInsets.all(12),
-                      margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
-                        color: Colors.red[50],
+                        color: Colors.blue[50],
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.red[200]!),
                       ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.error_outline, color: Colors.red[700]),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              authController.errorMessage,
-                              style: TextStyle(color: Colors.red[700]),
-                            ),
-                          ),
-                        ],
+                      child: const Text(
+                        '快速登录：a / 1',
+                        style: TextStyle(fontSize: 12),
                       ),
                     ),
-
-                  CustomButton(
-                    text: '登录',
-                    isLoading: authController.isLoading,
-                    width: double.infinity,
-                    onPressed: () => _handleLogin(authController),
-                  ),
-                  const SizedBox(height: 16),
-
-                  TextButton(
-                    onPressed: () => _showRegisterDialog(context),
-                    child: const Text('还没有账号？点击注册'),
-                  ),
-
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[50],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Text(
-                      '快速登录：a / 1',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
+                    const SizedBox(height: 40),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
       ),
     );
   }
 
   Future<void> _handleLogin(AuthController authController) async {
     if (_formKey.currentState?.validate() ?? false) {
-      print('开始登录验证');
-      print('用户名: ${_usernameController.text}');
-
       final success = await authController.login(
         _usernameController.text,
         _passwordController.text,
       );
 
-      print('登录结果: $success');
-
       if (success && mounted) {
-        print('登录成功，返回主页');
         Navigator.of(context).pop();
-        print('已执行pop操作');
-      } else {
-        print('登录失败或页面已销毁');
       }
     }
   }

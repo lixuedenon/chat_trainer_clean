@@ -1,4 +1,4 @@
-// lib/routes/app_routes.dart (完整调试版)
+// lib/routes/app_routes.dart
 
 import 'package:flutter/material.dart';
 import '../features/home/pages/home_page.dart';
@@ -90,6 +90,7 @@ class AppRoutes {
         print('🔴 [Routes] CharacterSelection缺少用户参数');
         return _errorRoute('缺少用户信息');
 
+      case '/chat':
       case basicChat:
         print('🟣 [Routes] 生成BasicChat路由');
         final args = settings.arguments as Map<String, dynamic>?;

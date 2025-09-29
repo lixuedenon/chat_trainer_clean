@@ -1,4 +1,4 @@
-// lib/features/chat/pages/basic_chat_page.dart (修复停止聊天跳转)
+// lib/features/chat/pages/basic_chat_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -31,6 +31,7 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   late AnimationController _fadeAnimationController;
   late Animation<double> _fadeAnimation;
+  bool _isStatusBarExpanded = true; // 状态栏是否展开
 
   @override
   void initState() {
@@ -89,6 +90,7 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
     return ChangeNotifierProvider.value(
       value: _chatController,
       child: Scaffold(
+        resizeToAvoidBottomInset: true,
         appBar: _buildAppBar(),
         body: FadeTransition(
           opacity: _fadeAnimation,
@@ -156,48 +158,121 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
   }
 
   Widget _buildStatusBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).dividerColor,
-            width: 0.5,
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _isStatusBarExpanded = !_isStatusBarExpanded;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        padding: EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: _isStatusBarExpanded ? 8 : 4,
+        ),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          border: Border(
+            bottom: BorderSide(
+              color: Theme.of(context).dividerColor,
+              width: 0.5,
+            ),
           ),
         ),
-      ),
-      child: Consumer<ChatController>(
-        builder: (context, controller, child) {
-          return Column(
-            children: [
-              Row(
+        child: Consumer<ChatController>(
+          builder: (context, controller, child) {
+            if (!_isStatusBarExpanded) {
+              // 折叠状态：只显示简要信息
+              return Row(
                 children: [
-                  Expanded(
-                    child: FavorabilityDisplay(
-                      currentFavorability: controller.currentFavorability,
-                      favorabilityHistory: controller.favorabilityHistory,
-                      character: widget.character,
+                  Icon(
+                    Icons.favorite,
+                    size: 16,
+                    color: ThemeManager.getFavorabilityColor(
+                      controller.currentFavorability,
+                      ThemeManager.currentTheme,
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: RoundCounter(
-                      actualRounds: controller.actualRounds,
-                      effectiveRounds: controller.effectiveRounds,
-                      status: controller.roundStatus,
-                      averageCharsPerRound: controller.averageCharsPerRound,
+                  const SizedBox(width: 4),
+                  Text(
+                    '${controller.currentFavorability}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: ThemeManager.getFavorabilityColor(
+                        controller.currentFavorability,
+                        ThemeManager.currentTheme,
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 16),
+                  Icon(
+                    Icons.chat_bubble_outline,
+                    size: 16,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${controller.effectiveRounds}/40',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    Icons.keyboard_arrow_down,
+                    size: 20,
+                    color: Colors.grey[600],
+                  ),
                 ],
-              ),
-            ],
-          );
-        },
+              );
+            }
+
+            // 展开状态：显示完整信息
+            return Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: FavorabilityDisplay(
+                        currentFavorability: controller.currentFavorability,
+                        favorabilityHistory: controller.favorabilityHistory,
+                        character: widget.character,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: RoundCounter(
+                        actualRounds: controller.actualRounds,
+                        effectiveRounds: controller.effectiveRounds,
+                        status: controller.roundStatus,
+                        averageCharsPerRound: controller.averageCharsPerRound,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.keyboard_arrow_up,
+                      size: 20,
+                      color: Colors.grey[600],
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -235,28 +310,31 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircleAvatar(
-            radius: 40,
-            backgroundColor: Colors.grey[200],
-            child: const Icon(Icons.person, size: 40, color: Colors.grey),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            '开始和${widget.character.name}聊天吧！',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            widget.character.description,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[600],
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(
+              radius: 40,
+              backgroundColor: Colors.grey[200],
+              child: const Icon(Icons.person, size: 40, color: Colors.grey),
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+            const SizedBox(height: 16),
+            Text(
+              '开始和${widget.character.name}聊天吧！',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              widget.character.description,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -409,10 +487,8 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
     }
   }
 
-  // 最终修复：使用正确的路由名称
   Future<void> _endConversation() async {
     try {
-      // 显示加载对话框
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -430,12 +506,10 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
       await _chatController.endConversation();
 
       if (mounted) {
-        // 关闭加载对话框
         Navigator.of(context).pop();
 
-        // 修复：使用app_routes.dart中正确配置的路由名称
         Navigator.of(context).pushReplacementNamed(
-          '/analysis_detail',  // 注意：这里是下划线，不是驼峰
+          '/analysis_detail',
           arguments: {
             'conversation': _chatController.currentConversation,
             'character': widget.character,
@@ -445,7 +519,6 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
       }
     } catch (e) {
       if (mounted) {
-        // 关闭加载对话框
         Navigator.of(context).pop();
 
         ScaffoldMessenger.of(context).showSnackBar(
