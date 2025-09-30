@@ -26,16 +26,18 @@ class ChatPage extends StatefulWidget {
   State<ChatPage> createState() => _ChatPageState();
 }
 
-class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
+class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin, WidgetsBindingObserver {
   late ChatController _chatController;
   final ScrollController _scrollController = ScrollController();
   late AnimationController _fadeAnimationController;
   late Animation<double> _fadeAnimation;
-  bool _isStatusBarExpanded = true; // 状态栏是否展开
+  bool _isStatusBarExpanded = false;
+  double _lastKeyboardHeight = 0;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     _chatController = ChatController(
       character: widget.character,
@@ -58,6 +60,22 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
     _chatController.addListener(_onChatUpdate);
   }
 
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+
+    if (keyboardHeight != _lastKeyboardHeight) {
+      _lastKeyboardHeight = keyboardHeight;
+
+      if (keyboardHeight > 0) {
+        Future.delayed(const Duration(milliseconds: 300), () {
+          _scrollToBottom();
+        });
+      }
+    }
+  }
+
   void _onChatUpdate() {
     if (_chatController.messages.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -78,6 +96,7 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _chatController.removeListener(_onChatUpdate);
     _chatController.dispose();
     _scrollController.dispose();
@@ -89,17 +108,22 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
       value: _chatController,
-      child: Scaffold(
-        resizeToAvoidBottomInset: true,
-        appBar: _buildAppBar(),
-        body: FadeTransition(
-          opacity: _fadeAnimation,
-          child: Column(
-            children: [
-              _buildStatusBar(),
-              Expanded(child: _buildMessagesList()),
-              _buildInputArea(),
-            ],
+      child: GestureDetector(
+        onTap: () {
+          FocusScope.of(context).unfocus();
+        },
+        child: Scaffold(
+          resizeToAvoidBottomInset: true,
+          appBar: _buildAppBar(),
+          body: FadeTransition(
+            opacity: _fadeAnimation,
+            child: Column(
+              children: [
+                _buildStatusBar(),
+                Expanded(child: _buildMessagesList()),
+                _buildInputArea(),
+              ],
+            ),
           ),
         ),
       ),
@@ -169,7 +193,7 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
         curve: Curves.easeInOut,
         padding: EdgeInsets.symmetric(
           horizontal: 16,
-          vertical: _isStatusBarExpanded ? 8 : 4,
+          vertical: _isStatusBarExpanded ? 8 : 6,
         ),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
@@ -183,7 +207,6 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
         child: Consumer<ChatController>(
           builder: (context, controller, child) {
             if (!_isStatusBarExpanded) {
-              // 折叠状态：只显示简要信息
               return Row(
                 children: [
                   Icon(
@@ -231,7 +254,6 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
               );
             }
 
-            // 展开状态：显示完整信息
             return Column(
               children: [
                 Row(
@@ -396,13 +418,21 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
           ),
         ),
       ),
-      child: Consumer<ChatController>(
-        builder: (context, controller, child) {
+      child: Builder(
+        builder: (context) {
+          final controller = Provider.of<ChatController>(context, listen: false);
+
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (controller.statusMessage.isNotEmpty)
-                _buildStatusMessage(controller.statusMessage),
+              Consumer<ChatController>(
+                builder: (context, controller, child) {
+                  if (controller.statusMessage.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  return _buildStatusMessage(controller.statusMessage);
+                },
+              ),
               ChatInput(
                 onSendMessage: (message) => _sendMessage(message, controller),
                 enabled: controller.canSendMessage,

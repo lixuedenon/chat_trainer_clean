@@ -37,6 +37,17 @@ class _ChatInputState extends State<ChatInput> {
   }
 
   @override
+  void didUpdateWidget(ChatInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 重建后立即恢复焦点
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.enabled && mounted && !_focusNode.hasFocus) {
+        _focusNode.requestFocus();
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _textController.removeListener(_onTextChanged);
     _textController.dispose();
@@ -64,12 +75,6 @@ class _ChatInputState extends State<ChatInput> {
     try {
       await widget.onSendMessage(message);
       _textController.clear();
-
-      Future.delayed(const Duration(milliseconds: 50), () {
-        if (mounted && widget.enabled && _focusNode.canRequestFocus) {
-          _focusNode.requestFocus();
-        }
-      });
     } catch (e) {
       rethrow;
     } finally {
@@ -115,7 +120,7 @@ class _ChatInputState extends State<ChatInput> {
                    widget.remainingCredits > 0;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -136,59 +141,55 @@ class _ChatInputState extends State<ChatInput> {
               ),
             ),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxHeight: 100,
-                  ),
-                  child: TextField(
-                    controller: _textController,
-                    focusNode: _focusNode,
-                    enabled: widget.enabled && !_isSending,
-                    maxLength: widget.maxLength,
-                    maxLines: null,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: canSend ? (_) => _sendMessage() : null,
-                    decoration: InputDecoration(
-                      hintText: '输入消息...',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey[100],
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      counterText: '',
-                      isDense: true,
+                child: TextField(
+                  key: const ValueKey('main_chat_input'),
+                  controller: _textController,
+                  focusNode: _focusNode,
+                  enabled: widget.enabled && !_isSending,
+                  maxLength: widget.maxLength,
+                  maxLines: null,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: canSend ? (_) => _sendMessage() : null,
+                  decoration: InputDecoration(
+                    hintText: '输入消息...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide.none,
                     ),
+                    filled: true,
+                    fillColor: Colors.grey[100],
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    counterText: '',
                   ),
                 ),
               ),
               const SizedBox(width: 8),
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: canSend ? Theme.of(context).primaryColor : Colors.grey[300],
-                  shape: BoxShape.circle,
-                ),
-                child: IconButton(
-                  onPressed: canSend ? _sendMessage : null,
-                  icon: _isSending
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Icon(Icons.send, color: Colors.white, size: 20),
+              GestureDetector(
+                onTap: canSend ? _sendMessage : null,
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: canSend ? Theme.of(context).primaryColor : Colors.grey[300],
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: _isSending
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Icon(Icons.send, color: Colors.white, size: 20),
+                  ),
                 ),
               ),
             ],

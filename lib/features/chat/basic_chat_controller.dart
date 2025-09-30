@@ -1,4 +1,5 @@
 // lib/features/chat/basic_chat_controller.dart
+// 🔥 修复版本：删除中间的 notifyListeners() 避免输入框重建
 
 import 'package:flutter/foundation.dart';
 import '../../core/models/character_model.dart';
@@ -89,7 +90,8 @@ class ChatController extends ChangeNotifier {
       // 更新状态
       _isTyping = true;
       _updateStatusMessage();
-      notifyListeners();
+      // 🔥 关键修复：注释掉这里的 notifyListeners()，避免输入框重建
+      // notifyListeners();
 
       // 获取AI回复
       final aiResponse = await MockAIService.generateResponse(
@@ -131,7 +133,7 @@ class ChatController extends ChangeNotifier {
     } finally {
       _isTyping = false;
       _updateStatusMessage();
-      notifyListeners();
+      notifyListeners(); // ✅ 只在最后通知一次
     }
   }
 
