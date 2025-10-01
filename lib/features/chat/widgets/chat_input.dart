@@ -39,7 +39,6 @@ class _ChatInputState extends State<ChatInput> {
   @override
   void didUpdateWidget(ChatInput oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 重建后立即恢复焦点
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.enabled && mounted && !_focusNode.hasFocus) {
         _focusNode.requestFocus();
@@ -151,6 +150,7 @@ class _ChatInputState extends State<ChatInput> {
                   maxLength: widget.maxLength,
                   maxLines: null,
                   textInputAction: TextInputAction.send,
+                  onEditingComplete: () {}, // 阻止默认键盘关闭行为
                   onSubmitted: canSend ? (_) => _sendMessage() : null,
                   decoration: InputDecoration(
                     hintText: '输入消息...',
